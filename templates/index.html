@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Video Downloader</title>
+  <style>
+    :root {
+      --bg: #0f1115; --card: #181b22; --border: #2a2f3a;
+      --text: #e8eaed; --muted: #9aa0aa; --accent: #4f8cff; --accent-2: #3a6fd8;
+      --ok: #34c759; --err: #ff5c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px;
+    }
+    .card {
+      width: 100%; max-width: 560px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 14px; padding: 28px;
+    }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    .sub { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+    input[type=url] {
+      width: 100%; padding: 12px 14px; font-size: 15px; color: var(--text);
+      background: #0f1218; border: 1px solid var(--border); border-radius: 9px; outline: none;
+    }
+    input[type=url]:focus { border-color: var(--accent); }
+    .formats { display: flex; gap: 10px; margin: 16px 0 20px; }
+    .formats label {
+      flex: 1; margin: 0; padding: 12px; text-align: center; cursor: pointer;
+      background: #0f1218; border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); font-size: 14px; transition: .15s;
+    }
+    .formats input { display: none; }
+    .formats input:checked + span { color: var(--accent); font-weight: 600; }
+    .formats label:has(input:checked) { border-color: var(--accent); background: #141a26; }
+    button {
+      width: 100%; padding: 13px; font-size: 15px; font-weight: 600; color: #fff;
+      background: var(--accent); border: none; border-radius: 9px; cursor: pointer; transition: .15s;
+    }
+    button:hover { background: var(--accent-2); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .status { margin-top: 22px; display: none; }
+    .status.show { display: block; }
+    .bar { height: 8px; background: #0f1218; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+    .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+    .meta { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+    .title { font-size: 14px; margin-bottom: 6px; word-break: break-word; }
+    .done { margin-top: 12px; }
+    .saved { color: var(--ok); font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .actions a, .actions button.reveal {
+      display: inline-block; padding: 10px 16px; font-weight: 600; text-decoration: none;
+      border-radius: 8px; font-size: 13px; width: auto; cursor: pointer; border: 1px solid var(--border);
+    }
+    .actions .reveal { background: var(--ok); color: #04210c; border: none; }
+    .actions a { background: #0f1218; color: var(--text); }
+    .error { color: var(--err); font-size: 13px; margin-top: 10px; word-break: break-word; }
+    .foot { margin-top: 20px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .updater {
+      margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted);
+    }
+    .upd-btn {
+      width: auto; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text);
+      background: #0f1218; border: 1px solid var(--border); border-radius: 7px; cursor: pointer;
+    }
+    .upd-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .upmsg { font-size: 12px; }
+    .upmsg.ok { color: var(--ok); }
+    .upmsg.err { color: var(--err); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Video Downloader</h1>
+    <p class="sub">Personal / educational use. Powered by yt-dlp, running locally.</p>
+
+    <label for="url">Video URL</label>
+    <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+
+    <div class="formats">
+      <label><input type="radio" name="fmt" value="video" checked /><span>🎬 Video (MP4)</span></label>
+      <label><input type="radio" name="fmt" value="audio" /><span>🎵 Audio (MP3)</span></label>
+    </div>
+
+    <button id="go">Download</button>
+
+    <div class="status" id="status">
+      <div class="title" id="stitle"></div>
+      <div class="bar"><div id="fill"></div></div>
+      <div class="meta"><span id="phase">Starting…</span><span id="speed"></span></div>
+      <div class="done" id="done"></div>
+      <div class="error" id="err"></div>
+    </div>
+
+    <p class="foot">Files auto-save to <code>~/Downloads/Video Downloader/</code>. Only download content you have the rights to.</p>
+
+    <div class="updater">
+      <span id="ver">yt-dlp: …</span>
+      <button id="update" class="upd-btn">Update yt-dlp</button>
+      <span id="upmsg" class="upmsg"></span>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const btn = $("go"), statusBox = $("status");
+    let polling = null;
+
+    async function start() {
+      const url = $("url").value.trim();
+      const fmt = document.querySelector('input[name=fmt]:checked').value;
+      if (!url) { $("url").focus(); return; }
+
+      reset();
+      btn.disabled = true; btn.textContent = "Working…";
+      statusBox.classList.add("show");
+      $("phase").textContent = "Queued…";
+
+      try {
+        const res = await fetch("/api/download", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, format: fmt })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Request failed");
+        poll(data.job_id);
+      } catch (e) {
+        showError(e.message); finish();
+      }
+    }
+
+    function poll(jobId) {
+      window.__job = jobId;
+      polling = setInterval(async () => {
+        try {
+          const res = await fetch("/api/status/" + jobId);
+          const j = await res.json();
+          render(j);
+          if (j.status === "done" || j.status === "error") {
+            clearInterval(polling); finish(); render(j);
+          }
+        } catch (e) { /* keep polling */ }
+      }, 800);
+    }
+
+    function render(j) {
+      if (j.title) $("stitle").textContent = j.title;
+      const p = j.progress;
+      $("fill").style.width = (p != null ? p : (j.status === "downloading" ? 5 : 0)) + "%";
+      const phases = { queued: "Queued…", downloading: "Downloading…", processing: "Processing (merging / converting)…", done: "Done", error: "Error" };
+      $("phase").textContent = phases[j.status] || j.status;
+      const bits = [];
+      if (j.speed) bits.push(j.speed);
+      if (j.eta) bits.push("ETA " + j.eta);
+      if (p != null && j.status === "downloading") bits.unshift(p + "%");
+      $("speed").textContent = bits.join(" · ");
+      if (j.status === "done" && j.filename) {
+        $("done").innerHTML =
+          '<div class="saved">✓ Saved to Downloads / Video Downloader</div>' +
+          '<div class="actions">' +
+            '<button class="reveal" data-job="' + window.__job + '">📂 Show in Finder</button>' +
+            '<a href="/files/' + encodeURIComponent(j.filename) + '">⬇ Save a copy…</a>' +
+          '</div>';
+        const rb = $("done").querySelector(".reveal");
+        if (rb) rb.addEventListener("click", () => {
+          fetch("/api/reveal/" + rb.dataset.job, { method: "POST" });
+        });
+      }
+      if (j.status === "error") showError(j.error || "Download failed");
+    }
+
+    function showError(msg) { $("err").textContent = msg; }
+    function finish() { btn.disabled = false; btn.textContent = "Download"; }
+    function reset() {
+      $("stitle").textContent = ""; $("done").innerHTML = ""; $("err").textContent = "";
+      $("fill").style.width = "0"; $("speed").textContent = "";
+    }
+
+    btn.addEventListener("click", start);
+    $("url").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+
+    // ---- yt-dlp version + updater ----
+    async function loadVersion() {
+      try {
+        const r = await fetch("/api/version");
+        const j = await r.json();
+        $("ver").textContent = "yt-dlp: " + j.yt_dlp;
+        return j.yt_dlp;
+      } catch (e) { $("ver").textContent = "yt-dlp: (offline)"; }
+    }
+
+    function upmsg(text, cls) {
+      const el = $("upmsg"); el.textContent = text;
+      el.className = "upmsg" + (cls ? " " + cls : "");
+    }
+
+    async function waitForRestart() {
+      // Poll until the freshly restarted server answers again.
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 750));
+        try {
+          const r = await fetch("/api/version", { cache: "no-store" });
+          if (r.ok) { const j = await r.json(); return j.yt_dlp; }
+        } catch (e) { /* still restarting */ }
+      }
+      return null;
+    }
+
+    $("update").addEventListener("click", async () => {
+      const b = $("update");
+      b.disabled = true; upmsg("Checking for updates…", "");
+      try {
+        const r = await fetch("/api/update", { method: "POST" });
+        const j = await r.json();
+        if (!r.ok) { upmsg(j.error || "Update failed", "err"); b.disabled = false; return; }
+        if (!j.changed) {
+          upmsg("Already up to date", "ok");
+          $("ver").textContent = "yt-dlp: " + j.new;
+          b.disabled = false; return;
+        }
+        upmsg("Updated to " + j.new + " — restarting…", "ok");
+        const v = await waitForRestart();
+        if (v) { $("ver").textContent = "yt-dlp: " + v; upmsg("Updated to " + v + " ✓", "ok"); }
+        else { upmsg("Updated — please reopen the app", "ok"); }
+      } catch (e) {
+        upmsg("Update failed: " + e.message, "err");
+      } finally {
+        b.disabled = false;
+      }
+    });
+
+    loadVersion();
+  </script>
+</body>
+</html>

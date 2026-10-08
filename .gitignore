@@ -1,0 +1,11 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Downloaded media (do not commit user downloads)
+downloads/
+
+# Runtime logs
+server.log
+*.log

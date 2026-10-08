@@ -1,0 +1,16 @@
+# Install into the venv with:
+#   ./.venv/bin/python -m pip install --upgrade --pre -r requirements.txt
+#
+# NOTE: yt-dlp is pinned to the *nightly* (pre-release) channel on purpose.
+# YouTube changes its anti-bot measures often and breaks stable yt-dlp releases;
+# fixes land in nightly first. If downloads start failing with 403 / "format not
+# available", update yt-dlp first (see UPDATE below).
+flask
+yt-dlp[default]
+
+# System dependencies (installed via Homebrew, not pip):
+#   brew install ffmpeg   # merges video+audio, converts to MP3
+#   brew install deno     # JS runtime YouTube requires for signature solving
+#
+# UPDATE yt-dlp when downloads start failing:
+#   ~/ytdl-webapp/.venv/bin/python -m pip install --upgrade --pre "yt-dlp[default]"
