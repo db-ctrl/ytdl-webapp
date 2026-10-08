@@ -40,6 +40,18 @@ python3 -m venv .venv
 
 Then open <http://127.0.0.1:5001>.
 
+## Desktop app (macOS, optional)
+
+Build a double-clickable **Video Downloader.app** on your Desktop that starts the
+server and opens your browser — no Terminal window:
+
+```bash
+./install-desktop-app.sh
+```
+
+The app launches silently, won't start a second copy if one is already running,
+and shows a brief notification. Source for the bundle lives in `desktop-app/`.
+
 ## Updating yt-dlp
 
 YouTube changes its anti-bot measures frequently and breaks stable yt-dlp releases.

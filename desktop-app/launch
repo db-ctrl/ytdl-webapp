@@ -1,0 +1,34 @@
+#!/bin/bash
+# Executable for "Video Downloader.app".
+# Starts the local Flask server (if not already running) and opens the browser.
+# Runs silently — no Terminal window.
+#
+# __APP_DIR__ is replaced with the repo's absolute path by install-desktop-app.sh.
+
+APP_DIR="__APP_DIR__"
+URL="http://127.0.0.1:5001"
+MATCH="__APP_DIR__/app.py"   # unique marker; app is launched by absolute path
+
+notify() { osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1; }
+
+# Sanity check: is the app installed?
+if [ ! -x "$APP_DIR/.venv/bin/python" ]; then
+  osascript -e 'display alert "Video Downloader" message "App not set up. Run the setup steps in the project README first."' >/dev/null 2>&1
+  exit 1
+fi
+
+# Start the server only if it is not already running.
+if ! pgrep -f "$MATCH" >/dev/null; then
+  cd "$APP_DIR" || exit 1
+  # Launch with an ABSOLUTE path so pgrep/pkill can reliably match it.
+  nohup ./.venv/bin/python "$APP_DIR/app.py" >server.log 2>&1 &
+  # Wait (up to ~10s) for it to accept connections.
+  for i in $(seq 1 20); do
+    if /usr/bin/curl -s -o /dev/null "$URL"; then break; fi
+    sleep 0.5
+  done
+  notify "Video Downloader" "Started — opening in your browser."
+fi
+
+# Open the app in the default browser.
+/usr/bin/open "$URL"
