@@ -7,6 +7,10 @@ Paste a URL, choose **Video (MP4)** or **Audio (MP3)**, and it downloads with li
 progress and auto-saves to `~/Downloads/Video Downloader/`. It runs entirely on
 `localhost` — nothing is uploaded anywhere.
 
+Works with **YouTube, TikTok, Instagram** and the 1000+ other sites yt-dlp
+supports. Public posts download without any login. Instagram posts that require a
+login (private/age-restricted accounts) will report a clear message instead.
+
 ## Features
 
 - One-click **Video (MP4)** (best quality up to 1080p, merged with ffmpeg) or **Audio (MP3)** (192 kbps)

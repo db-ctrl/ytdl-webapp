@@ -137,7 +137,27 @@ def _run_download(job_id, url, fmt):
                 filename=final.name if final.exists() else None,
             )
     except Exception as e:  # noqa: BLE001 - surface any yt-dlp error to the UI
-        _set(job_id, status="error", error=str(e))
+        _set(job_id, status="error", error=_friendly_error(str(e), url))
+
+
+def _friendly_error(msg, url=""):
+    """Turn common yt-dlp errors into plain-language guidance."""
+    low = msg.lower()
+    is_ig = "instagram.com" in url.lower()
+    if "login required" in low or "requested content is not available" in low or (
+        is_ig and ("empty media response" in low or "rate" in low or "csrf" in low)
+    ):
+        return ("Instagram wouldn't serve this without a login. Public posts usually "
+                "work; private or age-restricted ones need you to be logged in. "
+                "(This video may also be private or removed.)")
+    if "403" in low or "forbidden" in low or "format is not available" in low:
+        return ("The site refused the download. This usually means yt-dlp needs "
+                "updating — click 'Update yt-dlp' below, then try again.")
+    if "unsupported url" in low:
+        return "This link isn't from a supported site, or isn't a direct video URL."
+    if "private" in low or "members-only" in low:
+        return "This video is private or members-only, so it can't be downloaded."
+    return msg
 
 
 @app.route("/")

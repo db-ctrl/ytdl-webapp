@@ -72,15 +72,17 @@
     .upmsg { font-size: 12px; }
     .upmsg.ok { color: var(--ok); }
     .upmsg.err { color: var(--err); }
+    .platform { min-height: 16px; margin-top: 6px; font-size: 12px; color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Video Downloader</h1>
-    <p class="sub">Personal / educational use. Powered by yt-dlp, running locally.</p>
+    <p class="sub">YouTube · TikTok · Instagram and 1000+ sites. Personal / educational use, running locally.</p>
 
     <label for="url">Video URL</label>
-    <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+    <input id="url" type="url" placeholder="Paste a YouTube, TikTok, or Instagram link…" autocomplete="off" />
+    <div id="platform" class="platform"></div>
 
     <div class="formats">
       <label><input type="radio" name="fmt" value="video" checked /><span>🎬 Video (MP4)</span></label>
@@ -97,7 +99,7 @@
       <div class="error" id="err"></div>
     </div>
 
-    <p class="foot">Files auto-save to <code>~/Downloads/Video Downloader/</code>. Only download content you have the rights to.</p>
+    <p class="foot">Works with YouTube, TikTok, Instagram and most video sites. Files auto-save to <code>~/Downloads/Video Downloader/</code>. Instagram posts that require login need a logged-in browser. Only download content you have the rights to.</p>
 
     <div class="updater">
       <span id="ver">yt-dlp: …</span>
@@ -183,6 +185,26 @@
 
     btn.addEventListener("click", start);
     $("url").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+
+    // ---- live platform detection ----
+    const PLATFORMS = [
+      [/youtube\.com|youtu\.be/i, "🎬 YouTube detected"],
+      [/tiktok\.com/i, "🎵 TikTok detected"],
+      [/instagram\.com/i, "📸 Instagram detected"],
+      [/facebook\.com|fb\.watch/i, "👍 Facebook detected"],
+      [/twitter\.com|x\.com/i, "𝕏 X / Twitter detected"],
+      [/vimeo\.com/i, "🎞️ Vimeo detected"],
+      [/twitch\.tv/i, "🎮 Twitch detected"],
+    ];
+    function detectPlatform() {
+      const u = $("url").value.trim();
+      if (!u) { $("platform").textContent = ""; return; }
+      for (const [re, label] of PLATFORMS) {
+        if (re.test(u)) { $("platform").textContent = label; return; }
+      }
+      $("platform").textContent = /^https?:\/\//i.test(u) ? "🔗 Link detected — yt-dlp will try it" : "";
+    }
+    $("url").addEventListener("input", detectPlatform);
 
     // ---- yt-dlp version + updater ----
     async function loadVersion() {
