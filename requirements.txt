@@ -7,6 +7,7 @@
 # available", update yt-dlp first (see UPDATE below).
 flask
 yt-dlp[default]
+spotdl
 
 # System dependencies (installed via Homebrew, not pip):
 #   brew install ffmpeg   # merges video+audio, converts to MP3

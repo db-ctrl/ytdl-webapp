@@ -78,10 +78,10 @@
 <body>
   <div class="card">
     <h1>Video Downloader</h1>
-    <p class="sub">YouTube · TikTok · Instagram and 1000+ sites. Personal / educational use, running locally.</p>
+    <p class="sub">YouTube · TikTok · Instagram · Spotify and 1000+ sites. Personal / educational use, running locally.</p>
 
-    <label for="url">Video URL</label>
-    <input id="url" type="url" placeholder="Paste a YouTube, TikTok, or Instagram link…" autocomplete="off" />
+    <label for="url">Video or track URL</label>
+    <input id="url" type="url" placeholder="Paste a YouTube, TikTok, Instagram, or Spotify link…" autocomplete="off" />
     <div id="platform" class="platform"></div>
 
     <div class="formats">
@@ -99,7 +99,7 @@
       <div class="error" id="err"></div>
     </div>
 
-    <p class="foot">Works with YouTube, TikTok, Instagram and most video sites. Files auto-save to <code>~/Downloads/Video Downloader/</code>. Instagram posts that require login need a logged-in browser. Only download content you have the rights to.</p>
+    <p class="foot">Works with YouTube, TikTok, Instagram and most video sites. Spotify links are saved as MP3 by matching the track on YouTube (Spotify audio itself is DRM-protected and can't be downloaded). Files auto-save to <code>~/Downloads/Video Downloader/</code>. Only download content you have the rights to.</p>
 
     <div class="updater">
       <span id="ver">yt-dlp: …</span>
@@ -161,13 +161,17 @@
       if (j.eta) bits.push("ETA " + j.eta);
       if (p != null && j.status === "downloading") bits.unshift(p + "%");
       $("speed").textContent = bits.join(" · ");
-      if (j.status === "done" && j.filename) {
+      if (j.status === "done") {
+        let actions = '<button class="reveal" data-job="' + window.__job + '">📂 Show in Finder</button>';
+        if (j.filename) {
+          actions += '<a href="/files/' + encodeURIComponent(j.filename) + '">⬇ Save a copy…</a>';
+        }
+        const savedLine = j.count && !j.filename
+          ? '✓ Saved ' + j.count + ' tracks to Downloads / Video Downloader'
+          : '✓ Saved to Downloads / Video Downloader';
         $("done").innerHTML =
-          '<div class="saved">✓ Saved to Downloads / Video Downloader</div>' +
-          '<div class="actions">' +
-            '<button class="reveal" data-job="' + window.__job + '">📂 Show in Finder</button>' +
-            '<a href="/files/' + encodeURIComponent(j.filename) + '">⬇ Save a copy…</a>' +
-          '</div>';
+          '<div class="saved">' + savedLine + '</div>' +
+          '<div class="actions">' + actions + '</div>';
         const rb = $("done").querySelector(".reveal");
         if (rb) rb.addEventListener("click", () => {
           fetch("/api/reveal/" + rb.dataset.job, { method: "POST" });
@@ -188,6 +192,7 @@
 
     // ---- live platform detection ----
     const PLATFORMS = [
+      [/open\.spotify\.com|spotify:/i, "🎧 Spotify detected — saved as MP3 (matched on YouTube)"],
       [/youtube\.com|youtu\.be/i, "🎬 YouTube detected"],
       [/tiktok\.com/i, "🎵 TikTok detected"],
       [/instagram\.com/i, "📸 Instagram detected"],

@@ -49,6 +49,8 @@ jobs_lock = threading.Lock()
 
 # Basic sanity check so we only accept plausible video URLs.
 URL_RE = re.compile(r"^https?://", re.IGNORECASE)
+# Spotify links are handled by spotdl (matches the track on YouTube), not yt-dlp.
+SPOTIFY_RE = re.compile(r"open\.spotify\.com|^spotify:", re.IGNORECASE)
 
 
 def _set(job_id, **kwargs):
@@ -112,7 +114,48 @@ def _build_opts(job_id, fmt):
     return opts
 
 
+def _run_spotify(job_id, url):
+    """Download a Spotify track/album/playlist via spotdl (YouTube-matched MP3)."""
+    try:
+        before = {p.name for p in DOWNLOAD_DIR.glob("*.mp3")}
+        _set(job_id, status="downloading", progress=None, source="spotify",
+             title="Matching on YouTube…")
+        cmd = [
+            sys.executable, "-m", "spotdl", "download", url,
+            "--output", str(DOWNLOAD_DIR / "{artists} - {title}.{output-ext}"),
+            "--format", "mp3", "--threads", "2",
+        ]
+        proc = subprocess.Popen(
+            cmd, cwd=str(DOWNLOAD_DIR), stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True, bufsize=1,
+        )
+        count, last_title = 0, None
+        for line in proc.stdout:
+            m = re.search(r'Downloaded "([^"]+)"', line)
+            if m:
+                count += 1
+                last_title = m.group(1)
+                _set(job_id, status="processing", title=last_title, count=count)
+        proc.wait()
+
+        new_files = sorted({p.name for p in DOWNLOAD_DIR.glob("*.mp3")} - before)
+        if not new_files:
+            _set(job_id, status="error",
+                 error=_friendly_error("spotdl found no match", url))
+            return
+        if len(new_files) == 1:
+            _set(job_id, status="done", progress=100,
+                 filename=new_files[0], title=last_title or new_files[0])
+        else:
+            _set(job_id, status="done", progress=100, filename=None,
+                 count=len(new_files), title=f"{len(new_files)} tracks")
+    except Exception as e:  # noqa: BLE001
+        _set(job_id, status="error", error=_friendly_error(str(e), url))
+
+
 def _run_download(job_id, url, fmt):
+    if SPOTIFY_RE.search(url):
+        return _run_spotify(job_id, url)
     try:
         opts = _build_opts(job_id, fmt)
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -144,6 +187,10 @@ def _friendly_error(msg, url=""):
     """Turn common yt-dlp errors into plain-language guidance."""
     low = msg.lower()
     is_ig = "instagram.com" in url.lower()
+    if "spotify.com" in url.lower() or "spotify:" in url.lower() or "spotdl" in low:
+        return ("Couldn't fetch this Spotify item. Spotify audio can't be downloaded "
+                "directly, so the track is matched on YouTube — this one may have no "
+                "match, or the link may be private/region-locked.")
     if "login required" in low or "requested content is not available" in low or (
         is_ig and ("empty media response" in low or "rate" in low or "csrf" in low)
     ):
@@ -170,7 +217,7 @@ def start_download():
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or "").strip()
     fmt = data.get("format", "video")
-    if not URL_RE.match(url):
+    if not URL_RE.match(url) and not SPOTIFY_RE.search(url):
         return jsonify({"error": "Please enter a valid http(s) URL."}), 400
     if fmt not in ("video", "audio"):
         fmt = "video"
@@ -270,14 +317,18 @@ def update():
 def reveal(job_id):
     with jobs_lock:
         job = jobs.get(job_id)
-    if not job or not job.get("filename"):
-        return jsonify({"error": "nothing to reveal"}), 404
-    target = (DOWNLOAD_DIR / job["filename"]).resolve()
-    if DOWNLOAD_DIR.resolve() not in target.parents or not target.exists():
-        return jsonify({"error": "file not found"}), 404
-    # Reveal the saved file in Finder (macOS). Best-effort; ignore failures.
-    if sys.platform == "darwin":
-        subprocess.Popen(["open", "-R", str(target)])
+    if not job:
+        return jsonify({"error": "unknown job"}), 404
+    # With a single file, reveal it; otherwise (e.g. a playlist) open the folder.
+    if job.get("filename"):
+        target = (DOWNLOAD_DIR / job["filename"]).resolve()
+        if DOWNLOAD_DIR.resolve() not in target.parents or not target.exists():
+            return jsonify({"error": "file not found"}), 404
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", "-R", str(target)])
+    else:
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", str(DOWNLOAD_DIR)])
     return jsonify({"ok": True})
 
 

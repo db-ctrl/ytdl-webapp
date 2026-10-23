@@ -11,6 +11,13 @@ Works with **YouTube, TikTok, Instagram** and the 1000+ other sites yt-dlp
 supports. Public posts download without any login. Instagram posts that require a
 login (private/age-restricted accounts) will report a clear message instead.
 
+**Spotify** links (track / album / playlist) are also supported, via
+[spotdl](https://github.com/spotDL/spotify-downloader). Note: Spotify's own audio
+is DRM-protected and cannot be downloaded. spotdl instead reads the track's
+metadata from Spotify, finds the matching song on YouTube, and saves that as a
+tagged MP3. The result is a YouTube rip labelled with Spotify's info, not
+Spotify's stream.
+
 ## Features
 
 - One-click **Video (MP4)** (best quality up to 1080p, merged with ffmpeg) or **Audio (MP3)** (192 kbps)
