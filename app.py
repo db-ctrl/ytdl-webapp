@@ -103,11 +103,19 @@ def _build_opts(job_id, fmt):
                 ],
             }
         )
-    else:  # video (default): best mp4 up to 1080p, merged
+    elif fmt == "video":
         opts.update(
             {
                 "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/"
                 "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+                "merge_output_format": "mp4",
+            }
+        )
+    else:  # auto (default): grab whatever's there — video if present, else audio
+        opts.update(
+            {
+                "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/"
+                "best/bestaudio",
                 "merge_output_format": "mp4",
             }
         )
@@ -216,11 +224,11 @@ def index():
 def start_download():
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or "").strip()
-    fmt = data.get("format", "video")
+    fmt = data.get("format", "auto")
     if not URL_RE.match(url) and not SPOTIFY_RE.search(url):
         return jsonify({"error": "Please enter a valid http(s) URL."}), 400
-    if fmt not in ("video", "audio"):
-        fmt = "video"
+    if fmt not in ("auto", "video", "audio"):
+        fmt = "auto"
 
     job_id = uuid.uuid4().hex
     with jobs_lock:

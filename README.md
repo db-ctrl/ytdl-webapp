@@ -3,9 +3,16 @@
 A simple local web app that downloads videos (and audio) using
 [yt-dlp](https://github.com/yt-dlp/yt-dlp). Built for personal and educational use.
 
-Paste a URL, choose **Video (MP4)** or **Audio (MP3)**, and it downloads with live
-progress and auto-saves to `~/Downloads/Video Downloader/`. It runs entirely on
-`localhost` — nothing is uploaded anywhere.
+Paste a URL and it figures out what to grab. **Auto** (the default) downloads the
+best media the link offers — video if there is one, otherwise audio — or pick
+**Video** / **Audio** to force a format. Downloads show live progress and auto-save
+to `~/Downloads/Video Downloader/`. It runs entirely on `localhost` — nothing is
+uploaded anywhere.
+
+**What it can't do:** sites that put their media behind a bot check (e.g.
+Cloudflare "Just a moment") or serve private, signed stream URLs can't be
+auto-downloaded — doing so would mean circumventing the site's protection. Use
+that site's own download/export button instead.
 
 Works with **YouTube, TikTok, Instagram** and the 1000+ other sites yt-dlp
 supports. Public posts download without any login. Instagram posts that require a
